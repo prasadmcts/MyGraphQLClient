@@ -1,12 +1,87 @@
-import React from 'react';
+import React, {Component} from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
-import App from './App';
-import * as serviceWorker from './serviceWorker';
 
-ReactDOM.render(<App />, document.getElementById('root'));
+// apollo client
 
-// If you want your app to work offline and load faster, you can change
-// unregister() to register() below. Note this comes with some pitfalls.
-// Learn more about service workers: https://bit.ly/CRA-PWA
-serviceWorker.unregister();
+import {ApolloClient, HttpLink, InMemoryCache} from 'apollo-boost'
+import gql from 'graphql-tag'
+
+const endPointUrl = 'http://localhost:9000/graphql'
+const client = new ApolloClient({
+   link: new HttpLink({uri:endPointUrl}),
+   cache:new InMemoryCache()
+});
+
+async function loadStudentsAsync() {
+   const query = gql`
+   {
+      students{
+         id
+         firstName
+         lastName
+         college{
+            name
+         }
+      }
+   }
+   `
+   const {data} = await client.query({query}) ;
+   return data.students;
+}
+class  App  extends Component {
+   constructor(props) {
+      super(props);
+      this.state = {
+         students:[]
+      }
+      this.studentTemplate =  [];
+   }
+   async loadStudents() {
+      const studentData =  await loadStudentsAsync();
+      this.setState({
+         students: studentData
+      })
+      console.log("loadStudents")
+   }
+   render() {
+      return(
+         <div>
+            <input type = "button"  value = "loadStudents" onClick = {this.loadStudents.bind(this)}/>
+            <div>
+               <br/>
+               <hr/>
+               <table border = "3">
+                  <thead>
+                     <tr>
+                        <td>First Name</td>
+                        <td>Last Name</td>
+                        <td>college Name</td>
+                     </tr>
+                  </thead>
+                  
+                  <tbody>
+                     {
+                        this.state.students.map(s => {
+                           return (
+                              <tr key = {s.id}>
+                                 <td>
+                                    {s.firstName}
+                                 </td>
+                                 <td>
+                                    {s.lastName}
+                                 </td>
+                                 <td>
+                                    {s.college.name}
+                                 </td>
+                              </tr>
+                           )
+                        })
+                     }
+                  </tbody>
+               </table>
+            </div>
+         </div>
+      )
+   }
+}
+ReactDOM.render(<App/>, document.getElementById('root'));
